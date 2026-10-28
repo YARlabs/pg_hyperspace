@@ -1,0 +1,7 @@
+comment = 'HyperspaceDB for PostgreSQL: Multi-Metric Spatial AI, Hyperbolic Geometry (Poincare/Lorentz), Optimal Transport (Wasserstein), and Native KAG GraphRAG'
+default_version = '@CARGO_VERSION@'
+module_pathname = 'pg_hyperspace'
+relocatable = false
+superuser = true
+trusted = false
+

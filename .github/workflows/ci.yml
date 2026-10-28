@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  DOCS_RS: "1"
+
+jobs:
+  lint-and-test:
+    name: Rustfmt, Pedantic Clippy & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy (zero warnings allowed)
+        run: DOCS_RS=1 cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Run unit & wiremock tests
+        run: cargo test -p pg_hyperspace-client
+
+  pgrx-matrix:
+    name: Build Extension (PostgreSQL ${{ matrix.pg }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pg: [pg16, pg17, pg18]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check pg_hyperspace for ${{ matrix.pg }}
+        run: DOCS_RS=1 cargo check -p pg_hyperspace --no-default-features --features ${{ matrix.pg }}
+

@@ -1,0 +1,22 @@
+[workspace]
+resolver = "3"
+members = ["pg_hyperspace-client", "pg_hyperspace"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/YARlabs/pg_hyperspace"
+authors = ["YAR Labs <engineering@yar.iтл>"]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+
+[profile.ci-test]
+inherits = "dev"
+debug = "line-tables-only"
+
+[profile.ci-test.package.pg_hyperspace]
+opt-level = 2

@@ -1,0 +1,4 @@
+[target.'cfg(target_os="macos")']
+# Postgres symbols are resolved dynamically by the server binary at load time.
+rustflags = ["-Clink-arg=-Wl,-undefined,dynamic_lookup"]
+

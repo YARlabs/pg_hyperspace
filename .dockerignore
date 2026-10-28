@@ -1,0 +1,25 @@
+# Git metadata
+.git
+.gitignore
+.github/
+
+# Host build artifacts
+target/
+**/target/
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local environment secrets
+.env
+.env.*
+
+# Documentation & governance (keep image layer context minimal)
+*.md
+!README.md
+

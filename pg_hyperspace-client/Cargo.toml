@@ -1,0 +1,18 @@
+[package]
+name = "pg_hyperspace-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "High-performance synchronous client and multi-metric spatial kernel library for pg_hyperspace"
+
+[dependencies]
+percent-encoding = "2.3.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+thiserror = "2.0.19"
+ureq = { version = "3.3.0", features = ["json"] }
+
+[dev-dependencies]
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros"] }
+wiremock = "0.6.5"
+
