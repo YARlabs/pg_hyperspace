@@ -21,9 +21,10 @@ thread_local! {
 /// Reads a `GucSetting<Option<CString>>` into a trimmed `String`.
 #[inline]
 pub(crate) fn guc_string(guc: &GucSetting<Option<CString>>) -> String {
-    guc.get()
-        .map(|c| c.to_string_lossy().trim().to_string())
-        .unwrap_or_default()
+    match guc.get() {
+        Some(c) => c.to_string_lossy().trim().to_string(),
+        None => String::new(),
+    }
 }
 
 /// Builds the effective [`Config`] for the current session or table override.

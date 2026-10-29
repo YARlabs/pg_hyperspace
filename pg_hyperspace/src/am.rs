@@ -7,7 +7,7 @@ use pg_hyperspace_client::{
     CreateCollectionRequest, InsertPayload, META_PG_TID_KEY, MetricKind, PgTid, SearchRequest,
 };
 use pgrx::{
-    PgBox, PgMemoryContexts,
+    PgBox, PgMemoryContexts, PgTupleDesc,
     itemptr::{item_pointer_get_both, item_pointer_set_all},
     prelude::*,
     spi::{Spi, quote_identifier, quote_qualified_identifier},
@@ -53,7 +53,10 @@ fn am_handler(_fcinfo: pg_sys::FunctionCallInfo) -> PgBox<pg_sys::IndexAmRoutine
     r.amclusterable = false;
     r.ampredlocks = false;
     r.amcanparallel = false;
-    r.amcanbuildparallel = false;
+    #[cfg(any(feature = "pg17", feature = "pg18"))]
+    {
+        r.amcanbuildparallel = false;
+    }
     r.amcaninclude = false;
     r.amusemaintenanceworkmem = false;
     r.amsummarizing = false;
@@ -63,7 +66,10 @@ fn am_handler(_fcinfo: pg_sys::FunctionCallInfo) -> PgBox<pg_sys::IndexAmRoutine
     r.ambuild = Some(ambuild);
     r.ambuildempty = Some(ambuildempty);
     r.aminsert = Some(aminsert);
-    r.aminsertcleanup = None;
+    #[cfg(any(feature = "pg17", feature = "pg18"))]
+    {
+        r.aminsertcleanup = None;
+    }
     r.ambulkdelete = Some(ambulkdelete);
     r.amvacuumcleanup = Some(amvacuumcleanup);
     r.amcanreturn = None;
@@ -293,10 +299,10 @@ unsafe extern "C-unwind" fn ambuild(
             );
         }
 
-        let heap_tupdesc = (*heap).rd_att;
-        let heap_natts = (*heap_tupdesc).natts.max(0) as usize;
-        let heap_attrs = (*heap_tupdesc).attrs.as_slice(heap_natts);
-        let vec_attr = &heap_attrs[(vec_heap_attnum - 1) as usize];
+        let heap_tupdesc = PgTupleDesc::from_pg_is_copy((*heap).rd_att);
+        let Some(vec_attr) = heap_tupdesc.get((vec_heap_attnum - 1) as usize) else {
+            error!("pg_hyperspace: invalid vector column attribute number {vec_heap_attnum}");
+        };
         let vector_column = pgrx::name_data_to_str(&vec_attr.attname).to_string();
 
         // In pgvector, atttypmod stores the exact dimension (> 0).
@@ -313,7 +319,9 @@ unsafe extern "C-unwind" fn ambuild(
             if attnum <= 0 {
                 error!("pg_hyperspace: filter columns must be plain table columns");
             }
-            let attr = &heap_attrs[(attnum - 1) as usize];
+            let Some(attr) = heap_tupdesc.get((attnum - 1) as usize) else {
+                error!("pg_hyperspace: invalid filter column attribute number {attnum}");
+            };
             filter_columns.push(pgrx::name_data_to_str(&attr.attname).to_string());
             filter_attnums.push(attnum);
         }

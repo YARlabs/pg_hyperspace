@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 
 use pg_hyperspace_client::HttpFilter;
-use pgrx::prelude::*;
+use pgrx::{PgTupleDesc, prelude::*};
 
 use crate::{QUERY_FILTERS_JSON, backend};
 
@@ -172,7 +172,8 @@ pub(crate) unsafe fn extract_insert_metadata(
     filter_columns: &[String],
 ) -> HashMap<String, String> {
     let mut meta = HashMap::with_capacity(filter_columns.len() * 2 + 1);
-    let natts = unsafe { (*index_tupdesc).natts }.max(0) as usize;
+    let tupdesc = unsafe { PgTupleDesc::from_pg_is_copy(index_tupdesc) };
+    let natts = tupdesc.len();
 
     for (idx, col_name) in filter_columns.iter().enumerate() {
         let att_pos = idx + 1; // 0 is the vector attribute
@@ -184,8 +185,10 @@ pub(crate) unsafe fn extract_insert_metadata(
             continue;
         }
         let datum = unsafe { *values.add(att_pos) };
-        let attrs = unsafe { (*index_tupdesc).attrs.as_slice(natts) };
-        let typoid = attrs[att_pos].atttypid;
+        let Some(attr) = tupdesc.get(att_pos) else {
+            continue;
+        };
+        let typoid = attr.atttypid;
 
         if let Some((str_val, _)) = unsafe { datum_to_string(datum, typoid) } {
             meta.insert(col_name.clone(), str_val);
